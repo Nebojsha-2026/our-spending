@@ -1111,3 +1111,42 @@ describe("migration: labelled names", () => {
     await old.close();
   });
 });
+
+describe("migration: shop names from a Description field", () => {
+  it("repairs 'Card payment' captures from their notification text", async () => {
+    const files = readdirSync(MIGRATIONS).filter((f) => f.endsWith(".sql")).sort();
+    const at = files.findIndex((f) => f.includes("description_field"));
+    const old = new PGlite();
+    await old.exec(SUPABASE_STUB);
+    for (const f of files.slice(0, at)) await old.exec(readFileSync(join(MIGRATIONS, f), "utf8"));
+    const nab = "Payment Successful | A payment was made of $9.77 From: VISA card ending 6800 Description: Afterpay afterpay.com";
+    await old.exec(`
+      insert into auth.users values ('${A}', 'a@example.com');
+      set role authenticated;
+      select set_config('request.jwt.claim.sub', '${A}', false);
+      select set_config('request.jwt.claims', '{"sub":"${A}","email":"a@example.com"}', false);
+      select public.create_household('Home', 'Alex');
+      insert into public.merchant_rules (household_id, match_pattern, clean_name, category_id)
+      select household_id, 'Afterpay', 'Afterpay', (select id from public.categories where name = 'Shopping') from public.members;
+      insert into public.transactions (household_id, member_id, amount_cents, merchant_raw, merchant, source, status, note, capture_text)
+      select m.household_id, m.id, v.cents, null, 'Card payment', 'android', 'captured', v.note, v.capture
+        from public.members m, (values
+          (-977, null, '${nab}'),
+          (-1200, 'Notification: Payment Successful | A payment was made of $12.00 Description: KFC NEWTOWN From: VISA card ending 6800', null),
+          (-250, 'Notification: Visa | $2.50', null)
+        ) as v(cents, note, capture);
+      reset role;
+    `);
+    await old.exec(readFileSync(join(MIGRATIONS, files[at]), "utf8"));
+    const got = await old.query(
+      `select t.amount_cents::int as cents, t.merchant, t.merchant_raw, t.note, c.name as category
+         from public.transactions t left join public.categories c on c.id = t.category_id order by t.amount_cents`,
+    );
+    expect(got.rows).toEqual([
+      { cents: -1200, merchant: "KFC Newtown", merchant_raw: "KFC NEWTOWN", note: null, category: null },
+      { cents: -977, merchant: "Afterpay", merchant_raw: "Afterpay", note: null, category: "Shopping" },
+      { cents: -250, merchant: "Card payment", merchant_raw: null, note: "Notification: Visa | $2.50", category: null }, // no name to find
+    ]);
+    await old.close();
+  });
+});

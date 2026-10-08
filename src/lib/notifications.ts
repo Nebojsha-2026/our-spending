@@ -62,6 +62,18 @@ export function stripLabel(s: string) {
   return s.replace(LABEL, "").trim();
 }
 
+// Bank alerts laid out as fields: "A payment was made of $9.77 From: VISA card
+// ending 6800 Description: Afterpay afterpay.com". The shop is the Description
+// (or Merchant / Payee) field, up to the next "Field:".
+const FIELD_MERCHANT =
+  /\b(?:description|merchant|merchant name|payee|paid to|purchase at)\s*:\s*(.+?)(?=\s+(?:from|to|card|account|date|time|amount|reference|ref|balance|location)\s*:|\s*$)/i;
+
+/** "Afterpay afterpay.com" → "Afterpay": a trailing web address adds nothing. */
+function dropTrailingDomain(s: string) {
+  const without = s.replace(/\s+(?:www\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:com|net|org|io|co|app|shop|store)(?:\.au)?(?:\/\S*)?$/i, "").trim();
+  return without || s;
+}
+
 // Words that mean "this is a purchase" when a notification names no shop.
 const PURCHASE_WORDS = /\b(spent|purchase|paid|payment|tap|contactless|charged|debited)\b/i;
 
@@ -94,7 +106,8 @@ export function parseNotification(raw: string, app = ""): NotificationResult {
   const cardName = CARD_NAME.exec(body)?.[1]?.trim() ?? (titleIsCard ? title.replace(/[•·*xX]{2,}\s*\d{4}|ending(?:\s+in)?\s*\d{4}/i, "").trim() || undefined : undefined);
   const card = cardName && last4 ? `${cardName} ${last4}` : (last4 ?? cardName ?? null);
 
-  let merchant = AT_MERCHANT.exec(body)?.[1] ?? TO_MERCHANT.exec(body)?.[1] ?? "";
+  const field = FIELD_MERCHANT.exec(body)?.[1];
+  let merchant = (field && !looksLikeCard(field) ? dropTrailingDomain(field) : "") || (AT_MERCHANT.exec(body)?.[1] ?? TO_MERCHANT.exec(body)?.[1] ?? "");
   if (!merchant && appKind(app) === "wallet") {
     // Google Wallet: the title is the merchant, the body is "$23.50 with Visa ••1234".
     if (title && !looksLikeAppName(title) && !titleIsCard) merchant = title;

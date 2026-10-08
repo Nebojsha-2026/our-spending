@@ -113,3 +113,21 @@ describe("labelled notification titles", () => {
   });
 });
 
+describe("bank alerts laid out as fields", () => {
+  const raw = "Payment Successful | A payment was made of $9.77 From: VISA card ending 6800 Description: Afterpay afterpay.com";
+
+  it("takes the shop from the Description field (the real NAB wording)", () => {
+    for (const app of ["NAB", "Google Wallet", "Wallet"]) {
+      expect(purchase(raw, app), app).toEqual({ kind: "purchase", cents: 977, merchant: "Afterpay", card: "6800" });
+    }
+  });
+
+  it("stops at the next field and keeps a description without a web address", () => {
+    expect(purchase("Payment Successful | A payment was made of $12.00 Description: KFC NEWTOWN From: VISA card ending 6800", "NAB")).toMatchObject({
+      merchant: "KFC NEWTOWN",
+      card: "6800",
+    });
+    expect(purchase("Payment Successful | A payment was made of $5.00 Merchant: Coles Ryde", "NAB")).toMatchObject({ merchant: "Coles Ryde" });
+  });
+});
+
