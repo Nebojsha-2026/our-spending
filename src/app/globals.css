@@ -1,0 +1,137 @@
+@import "tailwindcss";
+
+/* Design tokens from design/DESIGN.md */
+@theme {
+  --color-bg: #f6f5f1;
+  --color-surface: #ffffff;
+  --color-ink: #1a1c1e;
+  --color-muted: #5b6167;
+  --color-line: #dcdad3;
+  --color-divider: #eeede8;
+  --color-nav-line: #e4e2db;
+  --color-segment: #e9e7e0;
+  --color-accent: #0f766e;
+  --color-accent-soft: #b9dcd6;
+  --color-accent-link: #0f5e57;
+  --color-accent-hover: #0b4642;
+  --color-warn-bg: #fff4de;
+  --color-warn-row: #fff8eb;
+  --color-warn-text: #8a5e00;
+  --color-warn-ink: #6b4a00;
+  --color-up: #b42318;
+  --color-you: #1d4ed8;
+  --color-partner: #c2410c;
+  --color-backdrop: #ecebe6;
+  --color-shadow: rgb(0 0 0 / 0.08);
+
+  --animate-sheet: sheet-up 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-fade: fade-in 200ms ease-out;
+  --animate-rise: rise-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+
+  @keyframes sheet-up {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  --font-sans: var(--font-dm-sans), system-ui, sans-serif;
+  --font-num: var(--font-space-grotesk), var(--font-dm-sans), system-ui, sans-serif;
+}
+
+/* Dark mode: same design, night palette. Follows the phone's setting. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #111315;
+    --color-surface: #1b1e21;
+    --color-ink: #eceae4;
+    --color-muted: #9aa1a8;
+    --color-line: #34383d;
+    --color-divider: #272a2e;
+    --color-nav-line: #2a2d31;
+    --color-segment: #25282c;
+    --color-accent: #0d9488;
+    --color-accent-soft: #1f4d48;
+    --color-accent-link: #5eead4;
+    --color-accent-hover: #99f6e4;
+    --color-warn-bg: #3a2e12;
+    --color-warn-row: #262013;
+    --color-warn-text: #f5c451;
+    --color-warn-ink: #f3d58a;
+    --color-up: #f87171;
+    --color-backdrop: #0a0b0c;
+    --color-shadow: rgb(0 0 0 / 0.4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+/* In a layer so Tailwind utilities (e.g. text-white on a link) win. */
+@layer base {
+  html {
+    color-scheme: light dark;
+  }
+
+  html,
+  body {
+    background: var(--color-bg);
+    color: var(--color-ink);
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font-family: inherit;
+  }
+
+  a {
+    color: var(--color-accent-link);
+    text-decoration: none;
+  }
+  a:hover {
+    color: var(--color-accent-hover);
+  }
+
+  /* Desktop: centre the app in a ~480px column. */
+  @media (min-width: 520px) {
+    body {
+      background: var(--color-backdrop);
+    }
+  }
+}

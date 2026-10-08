@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spending overview</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0F5E57;text-decoration:none}a:hover{color:#0B4642}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F6F5F1; font-family: 'DM Sans', sans-serif; color: #1A1C1E; display: flex; flex-direction: column; position: relative; overflow: hidden">
+
+  <div style="padding: 28px 20px 0 20px; display: flex; flex-direction: column; gap: 16px; flex: 1 1 0; min-height: 0; overflow-y: auto; padding-bottom: 20px">
+
+    <div style="display: flex; justify-content: space-between; align-items: center">
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <div style="font-size: 13px; color: #5B6167">Our spending</div>
+        <div style="font-size: 20px; font-weight: 700">{{periodLabel}}</div>
+      </div>
+      <div style="display: flex; gap: 8px">
+        <button aria-label="Previous period" style="width: 44px; height: 44px; border-radius: 22px; border: 1px solid #DCDAD3; background: #FFFFFF; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1A1C1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></button>
+        <button aria-label="Next period" style="width: 44px; height: 44px; border-radius: 22px; border: 1px solid #DCDAD3; background: #FFFFFF; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1A1C1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg></button>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; background: #E9E7E0; border-radius: 12px; padding: 4px">
+      <sc-for list="{{pills}}" as="p" hint-placeholder-count="3">
+        <button onClick="{{p.pick}}" style="{{p.style}}">{{p.label}}</button>
+      </sc-for>
+    </div>
+
+    <div style="background: #FFFFFF; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; justify-content: space-between; align-items: baseline">
+        <div style="font-size: 13px; color: #5B6167">Total spent</div>
+        <div style="font-size: 13px; font-weight: 600; color: {{deltaColor}}">{{delta}}</div>
+      </div>
+      <div style="font-family: 'Space Grotesk', sans-serif; font-size: 40px; font-weight: 600; letter-spacing: -1px; line-height: 1">{{total}}</div>
+      <div style="display: flex; height: 10px; border-radius: 5px; overflow: hidden; gap: 2px">
+        <div style="background: #1D4ED8; width: {{youPct}}"></div>
+        <div style="background: #C2410C; flex-grow: 1"></div>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 13px">
+        <div style="display: flex; align-items: center; gap: 6px"><span style="width: 8px; height: 8px; border-radius: 4px; background: #1D4ED8; display: inline-block"></span><span style="color: #5B6167">You</span><span style="font-weight: 600">{{you}}</span></div>
+        <div style="display: flex; align-items: center; gap: 6px"><span style="width: 8px; height: 8px; border-radius: 4px; background: #C2410C; display: inline-block"></span><span style="color: #5B6167">Sam</span><span style="font-weight: 600">{{jem}}</span></div>
+      </div>
+    </div>
+
+    <a href="Transactions.dc.html" style="background: #FFF4DE; border-radius: 14px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; color: #6B4A00">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8A5E00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg>
+      <span style="font-size: 14px; flex-grow: 1">3 transactions need a category</span>
+      <span style="font-size: 14px; font-weight: 600">Review</span>
+    </a>
+
+    <div style="background: #FFFFFF; border-radius: 20px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px">
+      <div style="font-size: 15px; font-weight: 600">Where it went</div>
+      <sc-for list="{{cats}}" as="c" hint-placeholder-count="6">
+        <div style="display: flex; flex-direction: column; gap: 5px">
+          <div style="display: flex; justify-content: space-between; font-size: 13px">
+            <span>{{c.name}}</span>
+            <span style="font-weight: 600; font-family: 'Space Grotesk', sans-serif">{{c.amt}}</span>
+          </div>
+          <div style="height: 6px; background: #EEEDE8; border-radius: 3px">
+            <div style="height: 6px; border-radius: 3px; background: #0F766E; width: {{c.w}}"></div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="background: #FFFFFF; border-radius: 20px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px">
+      <div style="font-size: 15px; font-weight: 600">{{trendTitle}}</div>
+      <div style="display: flex; align-items: flex-end; gap: 6px; height: 96px">
+        <sc-for list="{{trend}}" as="t" hint-placeholder-count="6">
+          <div style="flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 6px">
+            <div style="{{t.barStyle}}"></div>
+            <div style="font-size: 11px; color: #5B6167">{{t.label}}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <nav style="background: #FFFFFF; border-top: 1px solid #E4E2DB; height: 84px; box-sizing: border-box; padding: 8px 12px 20px 12px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center">
+    <a href="Main.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; color: #0F5E57"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l9-8 9 8"></path><path d="M5 10v10h14V10"></path></svg>Overview</a>
+    <a href="Transactions.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; color: #5B6167"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg>Activity</a>
+    <a href="QuickAdd.dc.html" aria-label="Add a transaction" style="justify-self: center; width: 52px; height: 52px; border-radius: 26px; background: #0F766E; display: flex; align-items: center; justify-content: center; color: #FFFFFF"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg></a>
+    <a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; color: #5B6167"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 3v9l6 4"></path></svg>Budgets</a>
+    <a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; color: #5B6167"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg>Settings</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { period: 'month' };
+  }
+  renderVals() {
+    var D = {
+      week: {
+        label: 'Week of 30 Sep – 6 Oct', delta: '+12% vs last week', up: true,
+        total: 486.30, you: 268.90, jem: 217.40,
+        cats: [['Groceries', 168.40], ['Eating out', 112.70], ['Transport & fuel', 96.20], ['Shopping', 64.00], ['Other', 26.01], ['Subscriptions', 18.99]],
+        trendTitle: 'Last 6 weeks',
+        trend: [['25 Aug', 455], ['1 Sep', 512], ['8 Sep', 430], ['15 Sep', 498], ['22 Sep', 434], ['29 Sep', 486.3]]
+      },
+      month: {
+        label: 'September 2026', delta: '−8% vs August', up: false,
+        total: 3842.60, you: 2105.40, jem: 1737.20,
+        cats: [['Rent', 2080.00], ['Groceries', 612.40], ['Eating out', 384.90], ['Transport & fuel', 291.30], ['Bills & utilities', 248.00], ['Shopping', 156.00], ['Other', 70.00]],
+        trendTitle: 'Last 6 months',
+        trend: [['Apr', 3610], ['May', 3920], ['Jun', 3755], ['Jul', 4010], ['Aug', 4180], ['Sep', 3842.6]]
+      },
+      year: {
+        label: '2026 so far', delta: '−3% vs 2025', up: false,
+        total: 34912.40, you: 18640.10, jem: 16272.30,
+        cats: [['Rent', 18720.00], ['Groceries', 5410.60], ['Eating out', 3320.40], ['Transport & fuel', 2604.10], ['Bills & utilities', 2236.00], ['Shopping', 1621.30], ['Other', 1000.00]],
+        trendTitle: 'By month',
+        trend: [['J', 4194.8], ['F', 3510], ['M', 3890], ['A', 3610], ['M', 3920], ['J', 3755], ['J', 4010], ['A', 4180], ['S', 3842.6]]
+      }
+    };
+    var self = this;
+    var p = this.state.period;
+    var d = D[p];
+    var money = function (n) { return '$' + n.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+    var maxCat = Math.max.apply(null, d.cats.map(function (c) { return c[1]; }));
+    var maxT = Math.max.apply(null, d.trend.map(function (t) { return t[1]; }));
+    var last = d.trend.length - 1;
+    var pills = [['week', 'Week'], ['month', 'Month'], ['year', 'Year']].map(function (x) {
+      var on = x[0] === p;
+      return {
+        label: x[1],
+        pick: function () { self.setState({ period: x[0] }); },
+        style: 'height: 40px; border: none; border-radius: 9px; font-size: 14px; cursor: pointer; ' + (on ? 'background: #FFFFFF; color: #1A1C1E; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.08)' : 'background: transparent; color: #5B6167; font-weight: 500')
+      };
+    });
+    return {
+      pills: pills,
+      periodLabel: d.label,
+      delta: d.delta,
+      deltaColor: d.up ? '#B42318' : '#0F766E',
+      total: money(d.total),
+      you: money(d.you),
+      jem: money(d.jem),
+      youPct: (d.you / d.total * 100).toFixed(1) + '%',
+      cats: d.cats.map(function (c) { return { name: c[0], amt: money(c[1]), w: (c[1] / maxCat * 100).toFixed(1) + '%' }; }),
+      trendTitle: d.trendTitle,
+      trend: d.trend.map(function (t, i) {
+        return { label: t[0], barStyle: 'width: 100%; max-width: 28px; border-radius: 6px 6px 2px 2px; height: ' + Math.round(t[1] / maxT * 72) + 'px; background: ' + (i === last ? '#0F766E' : '#B9DCD6') };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

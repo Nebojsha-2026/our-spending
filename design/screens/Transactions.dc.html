@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Transactions</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0F5E57;text-decoration:none}a:hover{color:#0B4642}
+button,input{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F6F5F1; font-family: 'DM Sans', sans-serif; color: #1A1C1E; display: flex; flex-direction: column; overflow: hidden">
+
+  <div style="padding: 28px 20px 12px 20px; display: flex; flex-direction: column; gap: 14px">
+    <div style="font-size: 20px; font-weight: 700">Activity</div>
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <label for="txsearch" style="font-size: 12px; color: #5B6167">Search merchants or notes</label>
+      <input id="txsearch" type="search" placeholder="e.g. Woolworths" style="height: 44px; border-radius: 12px; border: 1px solid #DCDAD3; background: #FFFFFF; padding: 0 14px; font-size: 15px; color: #1A1C1E; box-sizing: border-box">
+    </div>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap">
+      <sc-for list="{{chips}}" as="c" hint-placeholder-count="4">
+        <button onClick="{{c.pick}}" style="{{c.style}}">{{c.label}}</button>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="flex: 1 1 0; min-height: 0; overflow-y: auto; padding: 0 20px 20px 20px; display: flex; flex-direction: column; gap: 18px">
+    <sc-for list="{{days}}" as="d" hint-placeholder-count="3">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <div style="display: flex; justify-content: space-between; font-size: 13px; color: #5B6167">
+          <span style="font-weight: 600">{{d.label}}</span>
+          <span>{{d.total}}</span>
+        </div>
+        <div style="background: #FFFFFF; border-radius: 16px; display: flex; flex-direction: column">
+          <sc-for list="{{d.rows}}" as="r" hint-placeholder-count="3">
+            <button style="{{r.rowStyle}}">
+              <span style="{{r.dotStyle}}">{{r.initial}}</span>
+              <span style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0; text-align: left">
+                <span style="font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.merchant}}</span>
+                <span style="font-size: 12px; color: {{r.catColor}}">{{r.sub}}</span>
+              </span>
+              <span style="font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 600; white-space: nowrap">{{r.amt}}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <nav style="background: #FFFFFF; border-top: 1px solid #E4E2DB; height: 84px; box-sizing: border-box; padding: 8px 12px 20px 12px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center">
+    <a href="Main.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; color: #5B6167"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l9-8 9 8"></path><path d="M5 10v10h14V10"></path></svg>Overview</a>
+    <a href="Transactions.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; color: #0F5E57"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg>Activity</a>
+    <a href="QuickAdd.dc.html" aria-label="Add a transaction" style="justify-self: center; width: 52px; height: 52px; border-radius: 26px; background: #0F766E; display: flex; align-items: center; justify-content: center; color: #FFFFFF"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg></a>
+    <a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; color: #5B6167"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 3v9l6 4"></path></svg>Budgets</a>
+    <a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; color: #5B6167"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3"></path><path d="M12 19v3"></path><path d="M2 12h3"></path><path d="M19 12h3"></path><path d="M4.9 4.9l2.1 2.1"></path><path d="M17 17l2.1 2.1"></path><path d="M4.9 19.1L7 17"></path><path d="M17 7l2.1-2.1"></path></svg>Settings</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { filter: 'all' };
+  }
+  renderVals() {
+    var self = this;
+    var f = this.state.filter;
+    var days = [
+      ['Today · Tue 6 Oct', [
+        ['Woolworths Newtown', 'Groceries', 'you', 'Apple Pay', 64.20],
+        ['Coles Ryde', 'Groceries', 'sam', 'Pixel', 38.50],
+        ['KAFE 88 SYDNEY', null, 'you', 'Apple Pay', 12.40]
+      ]],
+      ['Mon 5 Oct', [
+        ['BP Newtown', 'Transport & fuel', 'you', 'Bank CSV', 71.40],
+        ['Guzman y Gomez', 'Eating out', 'sam', 'Pixel', 27.90],
+        ['Opal', 'Transport & fuel', 'sam', 'Pixel', 4.80]
+      ]],
+      ['Sun 4 Oct', [
+        ['Kmart Parramatta', 'Shopping', 'sam', 'Pixel', 46.00],
+        ['AMAZON MKTPL AU', null, 'you', 'Bank CSV', 29.99],
+        ['Netflix', 'Subscriptions', 'you', 'Bank CSV', 18.99],
+        ['SQ *THE CORNER', null, 'sam', 'Pixel', 9.50]
+      ]]
+    ];
+    var money = function (n) { return '$' + n.toFixed(2); };
+    var keep = function (r) {
+      if (f === 'you') return r[2] === 'you';
+      if (f === 'sam') return r[2] === 'sam';
+      if (f === 'review') return r[1] === null;
+      return true;
+    };
+    var chips = [['all', 'All'], ['you', 'You'], ['sam', 'Sam'], ['review', 'Needs review · 3']].map(function (x) {
+      var on = x[0] === f;
+      return {
+        label: x[1],
+        pick: function () { self.setState({ filter: x[0] }); },
+        style: 'height: 36px; padding: 0 14px; border-radius: 18px; font-size: 13px; cursor: pointer; ' + (on ? 'background: #1A1C1E; color: #FFFFFF; border: 1px solid #1A1C1E; font-weight: 600' : 'background: #FFFFFF; color: #1A1C1E; border: 1px solid #DCDAD3; font-weight: 500')
+      };
+    });
+    var out = days.map(function (d) {
+      var rows = d[1].filter(keep);
+      var sum = rows.reduce(function (a, r) { return a + r[4]; }, 0);
+      return {
+        label: d[0],
+        total: rows.length ? '−' + money(sum) : '',
+        show: rows.length > 0,
+        rows: rows.map(function (r, i) {
+          var you = r[2] === 'you';
+          return {
+            merchant: r[0],
+            sub: (r[1] || 'Needs category') + ' · ' + (you ? 'You' : 'Sam') + ' · ' + r[3],
+            catColor: r[1] ? '#5B6167' : '#8A5E00',
+            amt: '−' + money(r[4]),
+            initial: you ? 'Y' : 'J',
+            dotStyle: 'width: 32px; height: 32px; flex-shrink: 0; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #FFFFFF; background: ' + (you ? '#1D4ED8' : '#C2410C'),
+            rowStyle: 'display: flex; align-items: center; gap: 12px; padding: 12px 14px; min-height: 60px; width: 100%; box-sizing: border-box; background: ' + (r[1] ? 'transparent' : '#FFF8EB') + '; border: none; cursor: pointer; color: #1A1C1E; ' + (i > 0 ? 'border-top: 1px solid #EEEDE8' : '') + '; border-radius: ' + (rows.length === 1 ? '16px' : i === 0 ? '16px 16px 0 0' : i === rows.length - 1 ? '0 0 16px 16px' : '0')
+          };
+        })
+      };
+    }).filter(function (d) { return d.show; });
+    return { chips: chips, days: out };
+  }
+}
+</script>
+</body>
+</html>
