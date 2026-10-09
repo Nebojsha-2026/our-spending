@@ -265,13 +265,24 @@ describe("phone ingest", () => {
   });
 
   it("falls back to the tidy name and the default card, uncategorised", async () => {
-    const r = await asAnon(() => ingest({ raw: "KAFE 88 SYDNEY", fallback: "Kafe", card: "Some other card", cents: -1240 }));
+    const r = await asAnon(() => ingest({ raw: "KAFE 88 SYDNEY", fallback: "Kafe", card: null, cents: -1240 }));
     expect(r).toMatchObject({ merchant: "Kafe", category: null });
     const [t] = await rows<{ nickname: string }>(
       `select a.nickname from public.transactions t join public.accounts a on a.id = t.account_id where t.id = $1`,
       [r.id],
     );
     expect(t.nickname).toBe("ANZ Visa");
+  });
+
+  it("skips a card that isn't saved, and matches Wallet names to nicknames", async () => {
+    const before = (await rows<{ n: number }>(`select count(*)::int as n from public.transactions`))[0].n;
+    for (const card of ["Afterpay Card", "Visa", "ANZ"]) {
+      expect(await asAnon(() => ingest({ card, cents: -4000, at: "2026-10-07T19:30:00+11:00" }))).toEqual({ skipped: "unknown_card", card });
+    }
+    expect((await rows<{ n: number }>(`select count(*)::int as n from public.transactions`))[0].n).toBe(before);
+    // Wallet's name can be longer than the nickname, and the case can differ.
+    const r = await asAnon(() => ingest({ card: "anz visa debit", cents: -4100, at: "2026-10-07T19:31:00+11:00" }));
+    expect(r).toMatchObject({ duplicate: false });
   });
 
   it("rejects bad tokens, revoked tokens and bad input", async () => {
@@ -284,8 +295,8 @@ describe("phone ingest", () => {
   });
 
   it("rate-limits a token to 20 captures per 10 minutes", async () => {
-    // 3 captured so far; fill up to 20.
-    for (let i = 0; i < 17; i++) {
+    // 4 captured so far; fill up to 20.
+    for (let i = 0; i < 16; i++) {
       await asAnon(() => ingest({ cents: -(100 + i), at: `2026-10-07T21:${String(i).padStart(2, "0")}:00+11:00` }));
     }
     await expect(asAnon(() => ingest({ cents: -999, at: "2026-10-07T22:00:00+11:00" }))).rejects.toThrow(/Too many/);
@@ -371,6 +382,24 @@ describe("Pixel capture", () => {
       ]);
     });
     expect(await look(lone.id)).toEqual({ merchant: "Woolworths", merchant_raw: "V5678 09/10 WOOLWORTHS 1234 NEWTOWN", note: null });
+  });
+
+  it("checks the last 4 digits against saved cards", async () => {
+    // A card that isn't saved: skipped, also when the shop is named.
+    expect(await asAnon(() => ingest({ cents: -977, raw: "Afterpay", card: "6800", at: "2026-10-08T14:00:00+11:00" }))).toEqual({
+      skipped: "unknown_card",
+      card: "6800",
+    });
+    // Android without digits ("Visa") still lands on the default card.
+    expect((await asAnon(() => ingest({ cents: -310, raw: "Bakery", card: "Visa", at: "2026-10-08T14:05:00+11:00" }))).duplicate).toBe(false);
+    // While one of the person's cards has no digits saved, an unknown number
+    // is logged as before (falls back to the default card).
+    await as(A, "a@example.com", () =>
+      rows(`insert into public.accounts (household_id, member_id, bank, nickname, type)
+            select household_id, id, 'ANZ', 'Old card', 'credit' from public.members where user_id = auth.uid()`),
+    );
+    expect(await asAnon(() => ingest({ cents: -978, raw: "Afterpay", card: "6800", at: "2026-10-08T14:10:00+11:00" }))).toMatchObject({ duplicate: false });
+    await as(A, "a@example.com", () => rows(`delete from public.accounts where nickname = 'Old card'`));
   });
 
   it("logs failures for the token's household only", async () => {
@@ -1148,5 +1177,61 @@ describe("migration: shop names from a Description field", () => {
       { cents: -250, merchant: "Card payment", merchant_raw: null, note: "Notification: Visa | $2.50", category: null }, // no name to find
     ]);
     await old.close();
+  });
+});
+
+describe("weekly Capture log summary", () => {
+  const HASH = "f".repeat(64);
+  type Summary = { missed: number; unknown_cards: number; unreadable: number; subscriptions: { endpoint: string }[] };
+  const claim = async () => (await rows<{ r: Summary }>(`select public.claim_capture_summary($1) as r`, [HASH]))[0].r;
+  const none = { missed: 0, unknown_cards: 0, unreadable: 0, subscriptions: [] };
+  /** A Capture log row `daysAgo` days before the start of this Sydney week. */
+  const failure = (reason: string, daysAgo: number) =>
+    rows(
+      `insert into public.ingest_failures (household_id, member_id, raw, reason, created_at)
+       select m.household_id, m.id, 'x', $1,
+              (date_trunc('week', now() at time zone 'Australia/Sydney') - make_interval(days => $2) + interval '12 hours')
+                at time zone 'Australia/Sydney'
+       from public.members m where m.user_id = $3`,
+      [reason, daysAgo, B],
+    );
+
+  beforeAll(async () => {
+    await as(B, "b@example.com", () =>
+      rows(`insert into public.device_tokens (member_id, label, token_hash)
+            select id, 'Summary phone', '${HASH}' from public.members where user_id = auth.uid()`),
+    );
+    await rows(`delete from public.ingest_failures`);
+  });
+
+  it("counts last week's missed payments once, leaving out the ones skipped on purpose", async () => {
+    await failure('Not one of your cards: "Afterpay Card". If it should count, add it', 1);
+    await failure('Not one of your cards: "Zip"', 6);
+    await failure("Couldn't read notification: no amount", 3);
+    await failure("Ignored: a refund, not a purchase", 2);
+    await failure("Couldn't read notification: this week", -1); // this week: next Monday's
+    await failure("Couldn't read notification: two weeks ago", 8);
+
+    // Nobody has push on: nothing, and nothing claimed.
+    expect(await claim()).toEqual(none);
+    await as(B, "b@example.com", () => rows(`select public.save_push_subscription('https://push.example.com/b', 'k', 'a', 'Android')`));
+
+    expect(await claim()).toEqual({
+      missed: 3,
+      unknown_cards: 2,
+      unreadable: 1,
+      subscriptions: [{ endpoint: "https://push.example.com/b", p256dh: "k", auth: "a" }],
+    });
+    expect(await claim()).toEqual(none);
+    await expect(rows(`select public.claim_capture_summary($1)`, ["0".repeat(64)])).rejects.toThrow(/invalid device token/);
+    await as(B, "b@example.com", () => expect(rows(`select * from private.capture_summaries`)).rejects.toThrow(/permission denied/));
+  });
+
+  it("sends nothing for a quiet week", async () => {
+    await rows(`delete from private.capture_summaries`);
+    await rows(`delete from public.ingest_failures`);
+    await failure("Ignored: a transfer", 2);
+    expect(await claim()).toEqual(none);
+    expect(await rows(`select * from private.capture_summaries`)).toHaveLength(0);
   });
 });

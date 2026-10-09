@@ -9,6 +9,9 @@ Supabase pauses free projects after a week with no activity. Daily phone capture
 **Why does a purchase say "Card payment"?**
 Google Wallet sometimes doesn't know the shop's name when you tap (its notification is titled with your card, e.g. "Visa ••1234"). The purchase is saved anyway and the name fills in by itself when your bank app's notification for it arrives, or when you import the bank CSV. The original notification text is in the transaction's note.
 
+**What's the Monday "payments weren't logged" note?**
+Once a week, phones with alerts on get a short note if any of last week's payments weren't logged: a card that isn't saved in the app, or a notification it couldn't read. Tap it to see them in the *Capture log*. Refunds, transfers and other notifications skipped on purpose don't count, and a quiet week sends nothing.
+
 **What does "Unconfirmed" mean?**
 A phone capture the bank hasn't confirmed yet. When you import the bank's CSV, matching rows confirm it (same card, same amount, within 3 days). If it's still unconfirmed after 7 days it shows in *Needs review*: maybe it was paid with a card you don't import (mark it confirmed) or the payment didn't go through (delete it).
 
@@ -17,7 +20,7 @@ No. Each CSV row is matched against phone captures and manual entries first; a m
 
 **What about Afterpay, Zip and other buy now, pay later?**
 Count the repayments, not the purchase. Each repayment comes out of your debit or credit card, so the app logs it like any other card payment: from the bank app's notification on Android, and from the bank CSV on any phone. That way a $40 order paid in four parts adds up to $40, never $80. Two things help:
-- If your Afterpay or Zip card is in Apple Wallet, **leave it out** of the iPhone Transaction automation (pick your bank cards only, not "all"). Otherwise tapping it logs the full price as well as the repayments.
+- Only cards saved in *Settings → Accounts & cards* are logged, so tapping an Afterpay or Zip card in Apple Wallet doesn't add the full price on top: it goes to the *Capture log* instead. Just don't save that card in the app.
 - Repayments arrive named after the provider (e.g. *Afterpay*). Give one a category and tap **Always**, and every repayment after it follows.
 
 **The sign-in email didn't arrive.**

@@ -60,8 +60,8 @@ export default function CaptureLog() {
   return (
     <SettingsScreen title="Capture log">
       <div className="px-1 text-[13px] text-muted">
-        Phone notifications that weren&apos;t saved: ones skipped on purpose (declines, refunds, transfers) and ones the
-        app couldn&apos;t read. If a real purchase lands here, add it with <Link href="/add">+</Link> and copy the text
+        Phone notifications that weren&apos;t saved: ones skipped on purpose (declines, refunds, transfers), payments from
+        cards that aren&apos;t in Accounts &amp; cards, and ones the app couldn&apos;t read. If a real purchase lands here, add it with <Link href="/add">+</Link> and copy the text
         so a pattern can be added for that wording.
       </div>
       {(error || action.error) && <ErrorNote>{error ?? action.error}</ErrorNote>}
