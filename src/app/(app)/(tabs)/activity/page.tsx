@@ -1,12 +1,13 @@
 "use client";
 
+import { CategoryIcon } from "@/components/CategoryIcon";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { EditTransactionSheet } from "@/components/EditTransactionSheet";
 import { useHousehold } from "@/components/HouseholdProvider";
 import { NeedsReview } from "@/components/NeedsReview";
 import { type ReviewGroup, ReviewGroupSheet } from "@/components/ReviewGroupSheet";
-import { Chip, ErrorNote, PersonDot, SecondaryButton, cx, inputClass } from "@/components/ui";
+import { Chip, ErrorNote, SecondaryButton, cx, inputClass } from "@/components/ui";
 import { formatSigned } from "@/lib/money";
 import { loadNeedsReview } from "@/lib/overview";
 import { dayLabel, sydneyDate } from "@/lib/periods";
@@ -27,7 +28,7 @@ export default function ActivityPage() {
 
 function Activity() {
   const params = useSearchParams();
-  const { members, memberById, categoryById, labelFor } = useHousehold();
+  const { members, categoryById, labelFor } = useHousehold();
   const [filter, setFilter] = useState(params.get("filter") ?? "all"); // all | review | <member id>
   const [search, setSearch] = useState("");
   const [term, setTerm] = useState("");
@@ -41,8 +42,15 @@ function Activity() {
   const [reviewCount, setReviewCount] = useState<number | null>(null);
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [group, setGroup] = useState<{ group: ReviewGroup; mixed: boolean } | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(params.get("saved") === "1" ? "Spending saved" : null);
   const [today] = useState(() => sydneyDate());
+
+  useEffect(() => {
+    if (params.get("saved") !== "1") return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("saved");
+    window.history.replaceState(null, "", url.pathname + url.search);
+  }, [params]);
 
   useEffect(() => {
     const t = setTimeout(() => setTerm(search.trim()), 250);
@@ -141,15 +149,15 @@ function Activity() {
   return (
     <>
       <div className="flex flex-col gap-[14px] px-5 pt-[calc(28px+env(safe-area-inset-top))] pb-3">
-        <div className="text-[20px] font-bold">Activity</div>
+        <div><h1 className="text-[28px] font-bold tracking-[-0.8px]">Activity</h1><p className="mt-1 text-[13px] text-muted">Every purchase, in one place.</p></div>
         <div className="flex flex-col gap-1">
-          <label htmlFor="txsearch" className="text-[12px] text-muted">
+          <label htmlFor="txsearch" className="sr-only">
             Search merchants or notes
           </label>
           <input
             id="txsearch"
             type="search"
-            placeholder="e.g. Woolworths"
+            placeholder="Search merchants or notes"
             className={inputClass}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -166,7 +174,7 @@ function Activity() {
 
       <div className={cx("flex min-h-0 flex-1 flex-col gap-[18px] overflow-y-auto [&>*]:shrink-0 px-5 pb-5 transition-opacity", loading && "opacity-60")}>
         {notice && (
-          <div role="status" className="rounded-[14px] bg-surface px-[14px] py-3 text-[14px] font-semibold text-accent">
+          <div role="status" className="animate-rise rounded-[14px] bg-surface px-[14px] py-3 text-[14px] font-semibold text-accent">
             {notice}
           </div>
         )}
@@ -198,14 +206,13 @@ function Activity() {
           );
           return (
             <div key={day} className="flex flex-col gap-2">
-              <div className="flex justify-between text-[13px] text-muted">
+              <div className="flex justify-between text-[13px] text-ink">
                 <span className="font-semibold">{dayLabel(day, today)}</span>
                 <span>{formatSigned(total)}</span>
               </div>
               <div className="flex flex-col overflow-hidden rounded-[16px] bg-surface">
                 {dayRows.map((r, i) => {
                   const category = r.category_id ? categoryById.get(r.category_id) : undefined;
-                  const member = memberById.get(r.member_id);
                   const who = labelFor(r.member_id);
                   const notSpending = category?.counts_as_spending === false;
                   // What needs attention, if anything (the design tints uncategorised rows).
@@ -222,12 +229,12 @@ function Activity() {
                       type="button"
                       onClick={() => setEditing(r)}
                       className={cx(
-                        "box-border flex min-h-[60px] w-full cursor-pointer items-center gap-3 px-[14px] py-3 text-ink",
+                        "box-border flex min-h-[76px] w-full cursor-pointer items-center gap-3 px-[14px] py-3 text-ink",
                         !category || r.review_reason ? "bg-warn-row" : "bg-transparent",
                         i > 0 && "border-t border-divider",
                       )}
                     >
-                      <PersonDot label={who} color={member?.colour ?? "#5B6167"} />
+                      <CategoryIcon icon={category?.icon} size={38} muted={!category} />
                       <span className="flex min-w-0 grow flex-col gap-[2px] text-left">
                         <span className="truncate text-[15px] font-semibold">{r.merchant}</span>
                         <span className={cx("truncate text-[12px]", flag ? "text-warn-text" : "text-muted")}>

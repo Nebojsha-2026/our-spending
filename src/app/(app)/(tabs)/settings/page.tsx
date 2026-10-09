@@ -1,5 +1,6 @@
 "use client";
 
+import { ThemePicker } from "@/components/ThemePicker";
 import { Coffee } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -48,7 +49,9 @@ export default function SettingsPage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto [&>*]:shrink-0 px-5 pt-[calc(28px+env(safe-area-inset-top))] pb-5">
-      <div className="text-[20px] font-bold">Settings</div>
+      <div><h1 className="text-[28px] font-bold tracking-[-0.8px]">Settings</h1><p className="mt-1 text-[13px] text-muted">Your household, your way.</p></div>
+
+      <ThemePicker />
 
       <div className="flex flex-col gap-2">
         <SectionLabel>Household</SectionLabel>

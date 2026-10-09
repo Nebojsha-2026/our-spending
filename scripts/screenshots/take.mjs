@@ -49,7 +49,16 @@ const SHOTS = [
   { name: "activity", path: "/activity" },
   { name: "needs-review", path: "/activity?filter=review", wait: "text=by merchant" },
   { name: "duplicate", path: "/activity?filter=review", wait: "text=by merchant", act: (p) => p.getByRole("button", { name: /KBC Surry Hills/ }).click(), after: "text=Compare with the earlier entry" },
-  { name: "quick-add", path: "/add" },
+  {
+    name: "quick-add", path: "/add",
+    act: async (p) => {
+      await p.getByLabel("Merchant (optional)").fill("Local café");
+      for (const key of ["1", "2", "Decimal point", "5", "0"]) {
+        await p.getByRole("button", { name: key, exact: true }).click();
+      }
+      await p.getByRole("button", { name: "Coffee", exact: true }).click();
+    },
+  },
   { name: "budgets", path: "/budgets" },
   { name: "settings", path: "/settings" },
   { name: "tour", path: "/", tour: true, wait: "text=Tap, and it's logged" },
@@ -71,7 +80,7 @@ const SHOTS = [
 async function main() {
   mkdirSync(OUT, { recursive: true });
   const mock = await startMock();
-  const app = spawn("npx", ["next", "start", "-p", String(PORT)], { cwd: ROOT, stdio: "inherit" });
+  const app = spawn(process.execPath, [join(ROOT, "node_modules/next/dist/bin/next"), "start", "-p", String(PORT)], { cwd: ROOT, stdio: "inherit" });
   try {
     await waitFor(`${BASE}/login`);
     const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });

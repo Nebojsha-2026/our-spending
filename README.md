@@ -19,6 +19,10 @@ Free to run on your own Supabase + Vercel · Installable app for iPhone and Andr
 
 </div>
 
+## New in 1.1.0
+
+A refreshed design, quicker spending entry, and **Light / Dark / System** themes under *Settings → Appearance*. Your theme choice stays on your device. Existing households can update normally; no additional configuration or database migration is needed for this release. [See the changelog](CHANGELOG.md).
+
 ## Why
 
 Most budgeting apps want a monthly fee and a login to your bank, or they make you type in every coffee. This app does neither:

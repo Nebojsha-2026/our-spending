@@ -103,9 +103,9 @@ export function Segmented<T extends string>({
             aria-checked={on}
             onClick={() => onChange(o.value)}
             className={cx(
-              "h-10 cursor-pointer truncate rounded-[9px] border-none px-2 text-[14px]",
+              "h-11 cursor-pointer truncate rounded-[9px] border-none px-2 text-[14px]",
               on ? "font-semibold" : "bg-transparent font-medium text-muted",
-              on && !o.color && "bg-surface text-ink shadow-[0_1px_2px_var(--color-shadow)]",
+              on && !o.color && "bg-accent text-white shadow-[0_1px_2px_var(--color-shadow)]",
               on && o.color && "text-white",
             )}
             style={on && o.color ? { background: o.color } : undefined}
@@ -139,9 +139,9 @@ export function Chip({
       onClick={onClick}
       className={cx(
         "shrink-0 cursor-pointer rounded-full border px-[14px] whitespace-nowrap",
-        size === "sm" ? "h-9 text-[13px]" : "h-[38px] text-[14px]",
+        size === "sm" ? "h-11 text-[13px]" : "h-11 text-[14px]",
         selected
-          ? cx("font-semibold", tone === "dark" ? "border-ink bg-ink text-bg" : "border-accent bg-accent text-white")
+          ? cx("font-semibold", tone === "dark" ? "border-accent bg-accent text-white" : "border-accent bg-accent text-white")
           : "border-line bg-surface font-medium text-ink",
       )}
     >
@@ -242,10 +242,19 @@ export function Sheet({
   const panel = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { e.preventDefault(); onClose(); }
+      if (e.key !== "Tab" || !panel.current) return;
+      const items = Array.from(panel.current.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]')).filter((el) => el.getClientRects().length > 0);
+      const first = items[0], last = items.at(-1);
+      if (!first) { e.preventDefault(); return; }
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === panel.current)) { e.preventDefault(); last?.focus(); }
+      else if (!e.shiftKey && (document.activeElement === last || document.activeElement === panel.current)) { e.preventDefault(); first.focus(); }
+    };
     document.addEventListener("keydown", onKey);
     panel.current?.focus();
-    return () => document.removeEventListener("keydown", onKey);
+    return () => { document.removeEventListener("keydown", onKey); previous?.focus(); };
   }, [open, onClose]);
   if (!open) return null;
   return (

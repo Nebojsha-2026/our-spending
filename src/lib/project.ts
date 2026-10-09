@@ -2,7 +2,7 @@
 // A null link is simply not shown.
 export const PROJECT = {
   name: "Our spending",
-  version: "1.0.0",
+  version: "1.1.0",
   /** e.g. "https://github.com/<you>/<repo>" */
   repoUrl: "https://github.com/Nebojsha-2026/our-spending" as string | null,
   /** e.g. "https://buymeacoffee.com/<you>" */

@@ -26,7 +26,7 @@ export function BottomNav() {
             href={tab.href}
             aria-current={active(tab.href) ? "page" : undefined}
             className={cx(
-              "flex flex-col items-center gap-[3px] text-[11px]",
+              "flex min-h-11 justify-center flex-col items-center gap-[3px] rounded-xl text-[11px]",
               active(tab.href) ? "font-semibold text-accent-link" : "text-muted",
             )}
           >
@@ -38,7 +38,7 @@ export function BottomNav() {
             key="add"
             href="/add"
             aria-label="Add a transaction"
-            className="flex size-[52px] items-center justify-center justify-self-center rounded-full bg-accent text-white"
+            className="flex size-[52px] items-center justify-center justify-self-center rounded-full bg-accent text-white shadow-[0_4px_12px_var(--color-shadow)] hover:text-white hover:bg-accent-link"
           >
             <PlusIcon />
           </Link>

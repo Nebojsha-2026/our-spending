@@ -2,16 +2,16 @@
 
 /* Design tokens from design/DESIGN.md */
 @theme {
-  --color-bg: #f6f5f1;
+  --color-bg: #f7f8f4;
   --color-surface: #ffffff;
-  --color-ink: #1a1c1e;
-  --color-muted: #5b6167;
-  --color-line: #dcdad3;
-  --color-divider: #eeede8;
+  --color-ink: #142c2b;
+  --color-muted: #61706d;
+  --color-line: #dce3de;
+  --color-divider: #edf1ed;
   --color-nav-line: #e4e2db;
-  --color-segment: #e9e7e0;
-  --color-accent: #0f766e;
-  --color-accent-soft: #b9dcd6;
+  --color-segment: #eaf0eb;
+  --color-accent: #095c50;
+  --color-accent-soft: #cce5d8;
   --color-accent-link: #0f5e57;
   --color-accent-hover: #0b4642;
   --color-warn-bg: #fff4de;
@@ -21,7 +21,7 @@
   --color-up: #b42318;
   --color-you: #1d4ed8;
   --color-partner: #c2410c;
-  --color-backdrop: #ecebe6;
+  --color-backdrop: #e8eee9;
   --color-shadow: rgb(0 0 0 / 0.08);
 
   --animate-sheet: sheet-up 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -59,9 +59,32 @@
   --font-num: var(--font-space-grotesk), var(--font-dm-sans), system-ui, sans-serif;
 }
 
-/* Dark mode: same design, night palette. Follows the phone's setting. */
+/* An explicit choice wins over the device preference. */
+:root[data-theme="dark"] {
+    --color-bg: #111315;
+    --color-surface: #1b1e21;
+    --color-ink: #eceae4;
+    --color-muted: #9aa1a8;
+    --color-line: #34383d;
+    --color-divider: #272a2e;
+    --color-nav-line: #2a2d31;
+    --color-segment: #25282c;
+    --color-accent: #0d9488;
+    --color-accent-soft: #1f4d48;
+    --color-accent-link: #5eead4;
+    --color-accent-hover: #99f6e4;
+    --color-warn-bg: #3a2e12;
+    --color-warn-row: #262013;
+    --color-warn-text: #f5c451;
+    --color-warn-ink: #f3d58a;
+    --color-up: #f87171;
+    --color-backdrop: #0a0b0c;
+    --color-shadow: rgb(0 0 0 / 0.4);
+  color-scheme: dark;
+}
+:root[data-theme="light"] { color-scheme: light; }
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --color-bg: #111315;
     --color-surface: #1b1e21;
     --color-ink: #eceae4;
@@ -135,3 +158,17 @@
     }
   }
 }
+
+/* Shared interaction feedback; never delays data entry or navigation. */
+@layer base {
+  button, a, input { transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease; }
+  button:not(:disabled):active { transform: scale(.98); }
+  button:disabled { cursor: not-allowed; }
+  :focus-visible { outline: 2px solid var(--color-accent-link); outline-offset: 3px; }
+}
+.spend-summary { background: #095c50; color: #fff; box-shadow: 0 8px 24px rgb(9 92 80 / .12); }
+.spend-summary .text-muted { color: #d2e6df; }
+.spend-summary .text-accent { color: #b9edd2; }
+.spend-summary .text-up { color: #ffd3bd; }
+.spend-summary .bg-divider { background: #ffffff24; }
+.category-bar { transition: width 240ms ease; }

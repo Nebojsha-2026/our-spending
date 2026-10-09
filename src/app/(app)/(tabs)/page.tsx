@@ -9,12 +9,12 @@ import { SupportCard } from "@/components/SupportCard";
 import { Tour } from "@/components/Tour";
 import { useHousehold } from "@/components/HouseholdProvider";
 import { AlertIcon, ChevronLeft, ChevronRight } from "@/components/icons";
-import { Card, CircleButton, ErrorNote, Segmented, cx } from "@/components/ui";
-import { deltaLabel, formatCents } from "@/lib/money";
+import { Card, CircleButton, ErrorNote, Segmented, PersonDot, cx } from "@/components/ui";
+import { deltaLabel, formatCents, formatSigned } from "@/lib/money";
 import { loadNeedsReview, loadOverview, type OverviewData } from "@/lib/overview";
 import { periodAt, periodLabel, previousLabel, sydneyDate, type PeriodKind } from "@/lib/periods";
 import { createClient } from "@/lib/supabase/client";
-import type { Transaction } from "@/lib/types";
+import { TRANSACTION_COLUMNS, type Transaction } from "@/lib/types";
 
 const KINDS: { value: PeriodKind; label: string }[] = [
   { value: "week", label: "Week" },
@@ -33,6 +33,15 @@ export default function OverviewPage() {
   const [openCategory, setOpenCategory] = useState<string | null>(null);
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [reloads, setReloads] = useState(0);
+  const [allCategories, setAllCategories] = useState(false);
+  const [recent, setRecent] = useState<Transaction[]>([]);
+  const [recentError, setRecentError] = useState(false);
+  useEffect(() => {
+    let live = true;
+    createClient().from("transactions").select(TRANSACTION_COLUMNS).order("occurred_at", { ascending: false }).limit(3).returns<Transaction[]>()
+      .then(({ data, error }) => { if (live) { setRecent(data ?? []); setRecentError(Boolean(error)); } });
+    return () => { live = false; };
+  }, [reloads]);
 
   const [cache, setCache] = useState<Record<string, OverviewData>>({});
   const key = `${kind}:${period.start}:${reloads}`;
@@ -80,19 +89,17 @@ export default function OverviewPage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto [&>*]:shrink-0 px-5 pt-[calc(28px+env(safe-area-inset-top))] pb-5">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-[23px] font-bold tracking-[-0.8px] text-accent-link">Our spending</h1>
+        <Link href="/settings/household" aria-label="Your household" className="flex -space-x-1">
+          {members.slice(0, 4).map((m) => <PersonDot key={m.id} label={labelFor(m.id)} color={m.colour} />)}
+          {members.length > 4 && <span className="flex size-8 items-center justify-center rounded-full bg-segment text-xs">+{members.length - 4}</span>}
+        </Link>
+      </div>
       <div className="flex items-center justify-between">
-        <div className="flex flex-col gap-[2px]">
-          <div className="text-[13px] text-muted">Our spending</div>
-          <div className="text-[20px] font-bold">{periodLabel(period, today)}</div>
-        </div>
-        <div className="flex gap-2">
-          <CircleButton label="Previous period" onClick={() => step(-1)}>
-            <ChevronLeft />
-          </CircleButton>
-          <CircleButton label="Next period" onClick={() => step(1)} disabled={offset >= 0}>
-            <ChevronRight />
-          </CircleButton>
-        </div>
+        <CircleButton label="Previous period" onClick={() => step(-1)}><ChevronLeft /></CircleButton>
+        <h2 className="text-[18px] font-semibold">{periodLabel(period, today)}</h2>
+        <CircleButton label="Next period" onClick={() => step(1)} disabled={offset >= 0}><ChevronRight /></CircleButton>
       </div>
 
       <Segmented
@@ -109,18 +116,19 @@ export default function OverviewPage() {
       {error && <ErrorNote>Couldn&apos;t load spending: {error}</ErrorNote>}
 
       <div className={cx("flex flex-col gap-4 transition-opacity", loading && !data && "opacity-0", loading && data && "opacity-60")}>
-        <Card className="gap-[14px] p-5">
+        <Card className="spend-summary animate-rise gap-[14px] p-5">
           <div className="flex items-baseline justify-between">
-            <div className="text-[13px] text-muted">Total spent</div>
+            <div className="text-[13px] text-muted">Spent this {kind}</div>
             {delta && (
               <div className={cx("text-[13px] font-semibold", delta.up ? "text-up" : "text-accent")}>{delta.text}</div>
             )}
           </div>
-          <div className="font-num text-[40px] leading-none font-semibold tracking-[-1px]">
+          <div className="font-num text-[44px] leading-none font-semibold tracking-[-1px]">
             {total < 0 ? "+" : ""}
             {formatCents(total)}
           </div>
-          <div className="flex h-[10px] gap-[2px] overflow-hidden rounded-[5px] bg-divider">
+          <div className="text-[12px] text-muted">Household total · AUD</div>
+          <div className="flex h-[8px] gap-[2px] overflow-hidden rounded-[5px] bg-divider">
             {splitTotal > 0 &&
               spendingMembers
                 .filter((x) => x.cents > 0)
@@ -153,15 +161,15 @@ export default function OverviewPage() {
           </Link>
         )}
 
-        <Card className="gap-3 px-5 py-[18px]">
+        <Card className="gap-3 px-4 py-4">
           <div className="flex items-baseline justify-between gap-2">
             <div className="text-[15px] font-semibold">Where it went</div>
-            {data && data.byCategory.length > 0 && <div className="text-[12px] text-muted">Tap to see transactions</div>}
+            {data && data.byCategory.length > 3 && <button type="button" className="min-h-11 cursor-pointer text-[12px] font-semibold text-accent-link" aria-expanded={allCategories} onClick={() => setAllCategories(!allCategories)}>{allCategories ? "Show less" : "View all"}</button>}
           </div>
           {data && data.byCategory.length === 0 && (
             <div className="text-[13px] text-muted">Nothing spent in this period yet.</div>
           )}
-          {data?.byCategory.map((c) => {
+          {(allCategories ? data?.byCategory : data?.byCategory.slice(0, 3))?.map((c) => {
             const id = c.categoryId ?? "none";
             const open = openCategory === id;
             const cat = c.categoryId ? categoryById.get(c.categoryId) : undefined;
@@ -171,7 +179,7 @@ export default function OverviewPage() {
                   type="button"
                   aria-expanded={open}
                   onClick={() => setOpenCategory(open ? null : id)}
-                  className="-mx-2 flex cursor-pointer items-center gap-3 rounded-[10px] border-none bg-transparent px-2 py-1 text-left text-ink"
+                  className="-mx-2 flex min-h-[48px] cursor-pointer items-center gap-3 rounded-[10px] border-none bg-transparent px-2 py-1 text-left text-ink"
                 >
                   <CategoryIcon icon={cat?.icon} muted={!cat} />
                   <span className="flex min-w-0 grow flex-col gap-[5px]">
@@ -185,7 +193,7 @@ export default function OverviewPage() {
                       </span>
                     </span>
                     <span className="block h-[6px] w-full rounded-[3px] bg-divider">
-                      <span className="block h-[6px] rounded-[3px] bg-accent" style={{ width: `${((c.cents / maxCat) * 100).toFixed(1)}%` }} />
+                      <span className="category-bar block h-[6px] rounded-[3px] bg-accent" style={{ width: `${((c.cents / maxCat) * 100).toFixed(1)}%` }} />
                     </span>
                   </span>
                 </button>
@@ -197,7 +205,18 @@ export default function OverviewPage() {
           })}
         </Card>
 
-        <Card className="gap-3 px-5 py-[18px]">
+        <Card className="gap-1 px-4 py-3">
+          <div className="flex items-center justify-between"><h2 className="text-[15px] font-semibold">Recent activity</h2><Link href="/activity" className="flex min-h-11 items-center text-[12px] font-semibold">View all</Link></div>
+          {recentError && <p className="text-[13px] text-muted">Couldn&apos;t load recent activity. <Link href="/activity">Try Activity</Link></p>}
+          {!recentError && recent.length === 0 && <p className="py-2 text-[13px] text-muted">Your latest purchases will appear here.</p>}
+          {recent.map((txn) => <button type="button" key={txn.id} onClick={() => setEditing(txn)} className="flex min-h-[64px] cursor-pointer items-center gap-3 border-t border-divider text-left">
+            <CategoryIcon icon={txn.category_id ? categoryById.get(txn.category_id)?.icon : undefined} />
+            <span className="min-w-0 flex-1"><span className="block truncate text-[13px] font-semibold">{txn.merchant}</span><span className="text-[11px] text-muted">{labelFor(txn.member_id)} · {txn.category_id ? categoryById.get(txn.category_id)?.name : "Needs category"}</span></span>
+            <span className="font-num text-[13px] font-semibold">{formatSigned(Number(txn.amount_cents))}</span>
+          </button>)}
+        </Card>
+
+        <Card className="gap-3 px-4 py-4">
           <div className="text-[15px] font-semibold">{data?.trendTitle ?? " "}</div>
           <div className="flex h-24 items-end gap-[6px]">
             {data?.trend.map((t, i) => (
@@ -217,7 +236,7 @@ export default function OverviewPage() {
         </Card>
 
         {data && data.topMerchants.length > 0 && (
-          <Card className="gap-3 px-5 py-[18px]">
+          <Card className="gap-3 px-4 py-4">
             <div className="text-[15px] font-semibold">Top merchants</div>
             {data.topMerchants.map((m) => (
               <div key={m.merchant} className="flex justify-between gap-3 text-[13px]">

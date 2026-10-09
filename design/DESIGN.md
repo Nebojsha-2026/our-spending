@@ -1,6 +1,6 @@
-# Design reference — match this exactly
+# Design reference
 
-The three screens in this folder are the approved design. Build the real app to look and behave like them.
+The three HTML screens in this folder are the original 1.0 design references. The approved 1.1 redesign described below supersedes their visual styling; the running app and README screenshots show the current design.
 
 - `screens/Overview.dc.html` — Overview (home) screen
 - `screens/Transactions.dc.html` — Activity / transactions list
@@ -59,3 +59,17 @@ These files are mockups from a design tool, not production code. Read them for l
 - **Dark mode** follows the phone's setting. Every token above has a night value in `src/app/globals.css` (`prefers-color-scheme: dark`); use tokens, never raw colours, so both modes work.
 - **Category icons**: lucide line icons in a 32px circle tinted `accent-soft`, from the curated set in `src/components/CategoryIcon.tsx` (the name is stored in `categories.icon`).
 - **Motion**: sheets slide up (260ms) over a fading backdrop, and expanding lists rise in. All motion is off when the phone's Reduce Motion is on.
+
+## Version 1.1 redesign
+
+The approved redesign builds on the original HTML references above. README screenshots are captured from the running app with sample household data.
+
+- Warm ivory background (`#F7F8F4`), evergreen accent (`#095C50`), quieter borders, and a teal household summary. Retain member colours rather than assigning new identity colours.
+- Overview shows the top three categories with View all, recent transactions, and the existing trend and merchant summaries. All totals still use real household data and the selected period.
+- Activity uses category icons, clearer date groups, and the existing search, member filters, review and editing flows.
+- Quick add shows five categories plus More when needed, keeps any overflow selection visible, adds the API-supported optional merchant field, and shows the amount on Save. Successful saves open Activity with a brief confirmation; failed requests preserve input for retry.
+- Settings → Appearance offers Light, Dark and System. System is the default; the choice is stored only on this browser/device under `our-spending-theme`. Apply it before hydration, sync browser theme colour, and honour device changes while System is selected.
+- Use 44px minimum touch targets for new controls, visible focus rings, keyboard-accessible sheets, and 160–260ms interaction feedback. Respect reduced motion. Short screens scroll rather than hiding the save action.
+- Keep the existing Next.js/Supabase/Vercel deployment and open-source dependencies. No database migration or additional service is needed.
+
+Regenerate README screenshots with the existing screenshot tooling whenever the approved UI changes. Use `OUT_DIR` outside `docs/screenshots` for unapproved review captures.
