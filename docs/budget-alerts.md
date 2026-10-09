@@ -10,6 +10,13 @@ When a category reaches **80%** and then **100%** of its monthly budget, every p
 
 Tapping the notification opens Budgets.
 
+The same phones also get a short note on Mondays when any of last week's payments weren't logged (a card that isn't saved in the app, or a notification it couldn't read):
+
+> **2 payments weren't logged last week**
+> They were on cards not saved in the app. Tap to check the Capture log.
+
+It arrives with the first purchase logged that Monday, and a quiet week sends nothing.
+
 ## Turning them on
 
 Do this on each phone, in the installed app:

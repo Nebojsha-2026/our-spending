@@ -201,7 +201,8 @@ export default function AlertsSettings() {
     <SettingsScreen title="Budget alerts">
       <div className="px-1 text-[13px] text-muted">
         When a category reaches <strong>80%</strong> and <strong>100%</strong> of its monthly budget, every phone with alerts on gets a
-        notification, whoever spent it. Each alert goes out once a month.{" "}
+        notification, whoever spent it. Each alert goes out once a month. On Mondays they also get a short note if any of last
+        week&apos;s payments weren&apos;t logged (see the Capture log).{" "}
         {budgets === 0 ? (
           <>
             You haven&apos;t set any budgets yet: <Link href="/settings/categories">set them in Categories &amp; budgets</Link>.

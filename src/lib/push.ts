@@ -1,9 +1,10 @@
-// Sends budget alerts by web push. Server only: route handlers import this,
+// Sends budget alerts and the weekly Capture log summary by web push. Server only: route handlers import this,
 // never client components (it holds the private key).
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { after } from "next/server";
 import webpush from "web-push";
 import { budgetAlertMessage, type BudgetAlert, type PushMessage } from "./budget-alerts";
+import { captureSummaryMessage, type CaptureSummary } from "./capture-summary";
 import { sydneyDate } from "./periods";
 
 export interface PushTarget {
@@ -83,6 +84,30 @@ export function queueBudgetAlerts(supabase: SupabaseClient, req: Request, tokenH
       }
     } catch (e) {
       console.error("budget alerts failed", e);
+    }
+  });
+}
+
+/**
+ * Call on every phone capture. Once a week (the first capture from Monday,
+ * Sydney time) tells the household's phones how many of last week's payments
+ * weren't logged, if any. The database makes sure it goes out only once.
+ */
+export function queueCaptureSummary(supabase: SupabaseClient, req: Request, tokenHash: string) {
+  const vapid = vapidFor(req);
+  if (!vapid) return;
+  after(async () => {
+    try {
+      const { data, error } = await supabase.rpc("claim_capture_summary", { p_token_hash: tokenHash });
+      // Database not migrated yet: nothing to send.
+      if (error?.code === "PGRST202") return;
+      if (error) throw error;
+      const { subscriptions, ...summary } = data as CaptureSummary & { subscriptions: PushTarget[] };
+      if (!summary.missed || !subscriptions.length) return;
+      const { errors } = await sendPush(supabase, vapid, subscriptions, captureSummaryMessage(summary));
+      if (errors.length) console.warn("capture summary not delivered everywhere:", errors.join("; "));
+    } catch (e) {
+      console.error("capture summary failed", e);
     }
   });
 }

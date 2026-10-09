@@ -53,11 +53,14 @@ export default function AccountsSettings() {
         </List>
       ) : (
         <div className="px-1 text-[14px] text-muted">
-          Add each card you pay with. Phone captures are matched to a card by its nickname.
+          Add each card you pay with. Phone captures are matched by nickname (iPhone) or last 4 digits (Android).
         </div>
       )}
       <SecondaryButton onClick={() => setEditing("new")}>Add a card</SecondaryButton>
-      <div className="px-1 text-[12px] text-muted">Only the nickname and last 4 digits are stored — never the full card number.</div>
+      <div className="px-1 text-[12px] text-muted">
+        Payments from a card that isn&apos;t listed here (an Afterpay card in Wallet, say) aren&apos;t logged; they show in the Capture
+        log. Only the nickname and last 4 digits are stored — never the full card number.
+      </div>
       {editing && <AccountSheet account={editing === "new" ? null : editing} onDone={() => setEditing(null)} />}
     </SettingsScreen>
   );
@@ -124,7 +127,7 @@ function AccountSheet({ account, onDone }: { account: Account | null; onDone: ()
           <input id={id} className={inputClass} value={nickname} maxLength={40} placeholder="ANZ Visa" onChange={(e) => setNickname(e.target.value)} />
         )}
       </Field>
-      <Field label="Last 4 digits" hint={last4Ok ? undefined : "Exactly 4 digits."}>
+      <Field label="Last 4 digits" hint={last4Ok ? "Android notifications are matched by these." : "Exactly 4 digits."}>
         {(id) => (
           <input
             id={id}

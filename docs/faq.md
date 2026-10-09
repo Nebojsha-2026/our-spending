@@ -9,11 +9,19 @@ Supabase pauses free projects after a week with no activity. Daily phone capture
 **Why does a purchase say "Card payment"?**
 Google Wallet sometimes doesn't know the shop's name when you tap (its notification is titled with your card, e.g. "Visa ••1234"). The purchase is saved anyway and the name fills in by itself when your bank app's notification for it arrives, or when you import the bank CSV. The original notification text is in the transaction's note.
 
+**What's the Monday "payments weren't logged" note?**
+Once a week, phones with alerts on get a short note if any of last week's payments weren't logged: a card that isn't saved in the app, or a notification it couldn't read. Tap it to see them in the *Capture log*. Refunds, transfers and other notifications skipped on purpose don't count, and a quiet week sends nothing.
+
 **What does "Unconfirmed" mean?**
 A phone capture the bank hasn't confirmed yet. When you import the bank's CSV, matching rows confirm it (same card, same amount, within 3 days). If it's still unconfirmed after 7 days it shows in *Needs review*: maybe it was paid with a card you don't import (mark it confirmed) or the payment didn't go through (delete it).
 
 **Will the bank CSV duplicate what the phones already logged?**
 No. Each CSV row is matched against phone captures and manual entries first; a match is merged, not added. When it isn't sure (two $4.50 coffees in three days, or a manual entry with a different name), it imports the row and flags it in *Needs review*, where **Merge** shows both side by side first. Re-importing the same file adds nothing.
+
+**What about Afterpay, Zip and other buy now, pay later?**
+Count the repayments, not the purchase. Each repayment comes out of your debit or credit card, so the app logs it like any other card payment: from the bank app's notification on Android, and from the bank CSV on any phone. That way a $40 order paid in four parts adds up to $40, never $80. Two things help:
+- Only cards saved in *Settings → Accounts & cards* are logged, so tapping an Afterpay or Zip card in Apple Wallet doesn't add the full price on top: it goes to the *Capture log* instead. Just don't save that card in the app.
+- Repayments arrive named after the provider (e.g. *Afterpay*). Give one a category and tap **Always**, and every repayment after it follows.
 
 **The sign-in email didn't arrive.**
 Check spam. Supabase's built-in sender allows only a few emails an hour; wait a bit, or add your own SMTP under *Supabase → Authentication → Emails*. If the email has a link but no 6-digit code, the sign-in email template wasn't set up: see [manual setup](manual-setup.md#supabase), step 4.

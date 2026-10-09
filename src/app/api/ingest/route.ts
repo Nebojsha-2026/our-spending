@@ -4,7 +4,8 @@ import { jsonError } from "@/lib/api";
 import { cleanMerchant, hashToken, parseAmount } from "@/lib/ingest";
 import { formatCents } from "@/lib/money";
 import { parseNotification, readIngestBody } from "@/lib/notifications";
-import { queueBudgetAlerts } from "@/lib/push";
+import { unknownCardReason } from "@/lib/capture-summary";
+import { queueBudgetAlerts, queueCaptureSummary } from "@/lib/push";
 import { supabaseEnv } from "@/lib/supabase/env";
 
 /**
@@ -18,8 +19,9 @@ import { supabaseEnv } from "@/lib/supabase/env";
  *   { "raw": "[notification_title] | [notification]", "app": "[app_name]", "source": "android" }
  *
  * Returns { id, merchant, category, amount, duplicate, message } — `message` is
- * ready for a phone notification. Notifications that aren't purchases, or can't
- * be read, are logged to Settings → Capture log.
+ * ready for a phone notification. Notifications that aren't purchases, can't
+ * be read, or name a card the household hasn't saved are logged to
+ * Settings → Capture log instead.
  *
  * Runs with the public key and no user session: the database functions check
  * the token hash and write only to that token's household.
@@ -49,6 +51,7 @@ export async function POST(req: Request) {
       p_reason: reason,
     });
     if (error?.code === "28000") return jsonError("Invalid or revoked device token", 401);
+    queueCaptureSummary(supabase, req, tokenHash);
     return NextResponse.json({ error: reason, logged: !error, ...extra }, { status });
   }
 
@@ -102,7 +105,18 @@ export async function POST(req: Request) {
     return jsonError("Couldn't save the transaction", 500);
   }
 
+  // A card the household hasn't saved (e.g. an Afterpay card in Wallet).
+  const skipped = data as { skipped?: string; card?: string };
+  if (skipped.skipped === "unknown_card") {
+    const raw = captureText ?? JSON.stringify(body).slice(0, 1000);
+    return fail(200, unknownCardReason(skipped.card ?? card ?? ""), raw, {
+      skipped: true,
+      message: `Not logged: ${skipped.card ?? "that card"} isn't one of your cards`,
+    });
+  }
+
   const r = data as { id: string; merchant: string; category: string | null; duplicate: boolean };
+  queueCaptureSummary(supabase, req, tokenHash);
   if (!r.duplicate && r.category) queueBudgetAlerts(supabase, req, tokenHash);
   const amount = formatCents(cents);
   return NextResponse.json(

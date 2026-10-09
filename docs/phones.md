@@ -40,7 +40,7 @@ If there's no *Get the Shortcut* button, build it by hand below (it's the same t
 4. Optional confirmation banner: add **Get Dictionary Value** (key `message`) from *Contents of URL*, then **Show Notification** with it → "Logged $23.50 · Groceries".
 5. Test with a small tap payment; it appears in Activity straight away (marked *Unconfirmed* until a bank CSV import confirms it).
 
-Name each card's nickname in *Settings → Accounts & cards* the way Wallet shows it (e.g. "ANZ Visa") so captures land on the right card; otherwise they fall back to that person's default card.
+Name each card's nickname in *Settings → Accounts & cards* the way Wallet shows it (e.g. "ANZ Visa"; Wallet's name may be longer, like "ANZ Visa Debit"). Only saved cards are logged: a payment from a card that isn't there goes to the *Capture log* instead, so an Afterpay card or a gift card in Wallet never counts twice.
 
 Test the endpoint without a phone:
 
@@ -71,7 +71,7 @@ The phone forwards the raw notification text; the server does the parsing, so if
 
 ## What the server does with each notification
 
-- **Purchase** → saved like an Apple Pay capture (merchant rules, card matched by its last 4 digits or nickname). When Google Wallet *and* the bank app both notify for one purchase, the second is recognised as the same person, same amount within 2 minutes, and not saved twice.
+- **Purchase** → saved like an Apple Pay capture (merchant rules, card matched by its last 4 digits or nickname). A number that isn't one of your saved cards goes to the *Capture log* instead; save each card's last 4 digits in *Settings → Accounts & cards*. When Google Wallet *and* the bank app both notify for one purchase, the second is recognised as the same person, same amount within 2 minutes, and not saved twice.
 - **Not a purchase** (declined, refund, money in, transfer, balance/statement alert) → skipped and listed in *Settings → Capture log*.
 - **Purchase with no shop name**: Google Wallet sometimes titles the notification with the card ("Visa ••1234") when the shop's terminal didn't send a name. It's saved as **Card payment**, with the notification text in its note. The shop name fills in by itself when the bank app's notification for the same purchase arrives (within 2 minutes), or when a bank CSV import confirms it. Turning on purchase notifications in the bank app gets you the name straight away.
 - **Couldn't read it** → listed in *Capture log* with the reason. Copy the text from there so a pattern can be added for that wording, and add the purchase with **+** meanwhile.
