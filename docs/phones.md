@@ -23,7 +23,7 @@ The macro listens to Google Wallet and the ANZ, NAB, CommBank and Westpac apps. 
 If *Settings → Devices → Add a phone → iPhone* shows **Get the Shortcut**:
 
 1. Tap **Get the Shortcut** → **Add Shortcut**. When it asks, paste the **URL** and the **Authorization header** shown on that screen (tap their Copy buttons).
-2. **Shortcuts → Automation → + → Transaction**: pick your cards (or all), leave merchants/categories on Any, choose **Run Immediately**, tap **Next** and pick the **Our spending** shortcut.
+2. **Shortcuts → Automation → + → Transaction**: pick your cards (or all), leave merchants/categories on Any, choose **Run Immediately**, tap **Next** and pick the **Our spending** shortcut. Leave out any Afterpay or Zip card ([why](faq.md)).
 3. Make a small tap payment and check *Activity*.
 
 If there's no *Get the Shortcut* button, build it by hand below (it's the same thing, step by step).
@@ -31,7 +31,7 @@ If there's no *Get the Shortcut* button, build it by hand below (it's the same t
 ## iPhone: by hand (Shortcuts "Transaction" automation)
 
 1. In the app: *Settings → Devices → Add a phone*. Copy the **URL** and **Authorization header** it shows (the token is shown once).
-2. On the iPhone: **Shortcuts → Automation → + → Transaction**. Choose your cards (or all), leave merchants/categories on Any, select **Run Immediately**, and turn off *Notify When Run*.
+2. On the iPhone: **Shortcuts → Automation → + → Transaction**. Choose your cards (or all), leave merchants/categories on Any, select **Run Immediately**, and turn off *Notify When Run*. Leave out any Afterpay or Zip card: their repayments are counted instead.
 3. Add **Get Contents of URL**:
    - URL: the copied URL (`https://<your-app>.vercel.app/api/ingest`)
    - Method: **POST**

@@ -15,6 +15,11 @@ A phone capture the bank hasn't confirmed yet. When you import the bank's CSV, m
 **Will the bank CSV duplicate what the phones already logged?**
 No. Each CSV row is matched against phone captures and manual entries first; a match is merged, not added. When it isn't sure (two $4.50 coffees in three days, or a manual entry with a different name), it imports the row and flags it in *Needs review*, where **Merge** shows both side by side first. Re-importing the same file adds nothing.
 
+**What about Afterpay, Zip and other buy now, pay later?**
+Count the repayments, not the purchase. Each repayment comes out of your debit or credit card, so the app logs it like any other card payment: from the bank app's notification on Android, and from the bank CSV on any phone. That way a $40 order paid in four parts adds up to $40, never $80. Two things help:
+- If your Afterpay or Zip card is in Apple Wallet, **leave it out** of the iPhone Transaction automation (pick your bank cards only, not "all"). Otherwise tapping it logs the full price as well as the repayments.
+- Repayments arrive named after the provider (e.g. *Afterpay*). Give one a category and tap **Always**, and every repayment after it follows.
+
 **The sign-in email didn't arrive.**
 Check spam. Supabase's built-in sender allows only a few emails an hour; wait a bit, or add your own SMTP under *Supabase → Authentication → Emails*. If the email has a link but no 6-digit code, the sign-in email template wasn't set up: see [manual setup](manual-setup.md#supabase), step 4.
 
