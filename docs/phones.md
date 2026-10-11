@@ -40,7 +40,7 @@ If there's no *Get the Shortcut* button, build it by hand below (it's the same t
 4. Optional confirmation banner: add **Get Dictionary Value** (key `message`) from *Contents of URL*, then **Show Notification** with it → "Logged $23.50 · Groceries".
 5. Test with a small tap payment; it appears in Activity straight away (marked *Unconfirmed* until a bank CSV import confirms it).
 
-Name each card's nickname in *Settings → Accounts & cards* the way Wallet shows it (e.g. "ANZ Visa"; Wallet's name may be longer, like "ANZ Visa Debit"). Only saved cards are logged: a payment from a card that isn't there goes to the *Capture log* instead, so an Afterpay card or a gift card in Wallet never counts twice.
+Save each card you pay with in *Settings → Accounts & cards*. Wallet often names a bank card plainly ("Debit", "ANZ Debit"); such a payment goes on your card from that bank, or your default card. A nickname that matches Wallet's name (e.g. "ANZ Visa") picks the exact card. Payments from anything else in Wallet, like an Afterpay or gift card, go to the *Capture log* instead, so they never count twice.
 
 Test the endpoint without a phone:
 
