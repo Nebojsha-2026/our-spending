@@ -301,6 +301,8 @@ describe("phone ingest", () => {
     expect(await cardOf("Debit", 0)).toBe("ANZ Visa"); // the default
     expect(await cardOf("NAB Credit", 1)).toBe("Everyday"); // same bank and type
     expect(await cardOf("Visa", 2)).toBe("ANZ Visa");
+    expect(await cardOf("ANZ Plus Visa Debit", 3)).toBe("ANZ Visa"); // every word of the nickname
+    expect(await asAnon(() => ingest({ card: "Afterpay Visa", cents: -4299, at: "2026-10-07T19:50:00+11:00" }))).toMatchObject({ skipped: "unknown_card" });
     await as(A, "a@example.com", () => rows(`delete from public.accounts where nickname = 'Everyday'`));
   });
 
@@ -314,8 +316,8 @@ describe("phone ingest", () => {
   });
 
   it("rate-limits a token to 20 captures per 10 minutes", async () => {
-    // 7 captured so far; fill up to 20.
-    for (let i = 0; i < 13; i++) {
+    // 8 captured so far; fill up to 20.
+    for (let i = 0; i < 12; i++) {
       await asAnon(() => ingest({ cents: -(100 + i), at: `2026-10-07T21:${String(i).padStart(2, "0")}:00+11:00` }));
     }
     await expect(asAnon(() => ingest({ cents: -999, at: "2026-10-07T22:00:00+11:00" }))).rejects.toThrow(/Too many/);
@@ -1288,6 +1290,43 @@ describe("migration: Wallet's plain card names", () => {
     expect(got.rows).toEqual([{ cents: -3396, merchant_raw: "IKEA", nickname: "ANZ Visa" }]);
     const left = await old.query<{ raw: string }>(`select raw from public.ingest_failures order by raw`);
     expect(left.rows.map((r) => r.raw)).toEqual(["{not json", body("$40.00", "JB HI-FI", "Afterpay Card")].sort());
+    await old.close();
+  });
+});
+
+describe("migration: Wallet names word by word", () => {
+  it("logs skipped 'ANZ Plus Visa Debit' payments unless the bank CSV has them", async () => {
+    const files = readdirSync(MIGRATIONS).filter((f) => f.endsWith(".sql")).sort();
+    const at = files.findIndex((f) => f.includes("wallet_name_words"));
+    const old = new PGlite();
+    await old.exec(SUPABASE_STUB);
+    for (const f of files.slice(0, at)) await old.exec(readFileSync(join(MIGRATIONS, f), "utf8"));
+    const hash = "8".repeat(64);
+    const body = (amount: string, merchant: string, card: string) => JSON.stringify({ amount, source: "apple_pay", card, merchant });
+    await old.exec(`
+      insert into auth.users values ('${A}', 'a@example.com');
+      set role authenticated;
+      select set_config('request.jwt.claim.sub', '${A}', false);
+      select set_config('request.jwt.claims', '{"sub":"${A}","email":"a@example.com"}', false);
+      select public.create_household('Home', 'Alex');
+      insert into public.device_tokens (member_id, label, token_hash) select id, 'iPhone', '${hash}' from public.members;
+      insert into public.accounts (household_id, member_id, bank, nickname, last4, type, is_default)
+      select household_id, id, 'ANZ', 'ANZ Visa', '2030', 'debit', true from public.members;
+      insert into public.transactions (household_id, member_id, amount_cents, merchant, source, status, occurred_at)
+      select household_id, id, -2160, 'The Scoop', 'csv', 'confirmed', now() - interval '1 day' from public.members;
+      reset role;
+    `);
+    const skip = (raw: string) =>
+      old.query(`select public.log_ingest_failure($1, 'apple_pay', $2, 'Not one of your cards: "x"')`, [hash, raw]);
+    await skip(body("$107.98", "Caltex Croydon Park", "ANZ Plus Visa Debit"));
+    await skip(body("$21.60", "SQ * The Scoop Artisan Gel", "ANZ Plus Visa Debit")); // already in from the CSV
+    await skip(body("$40.00", "JB HI-FI", "Afterpay Card"));
+    await old.exec(readFileSync(join(MIGRATIONS, files[at]), "utf8"));
+
+    const got = await old.query(`select amount_cents::int as cents, source from public.transactions order by amount_cents`);
+    expect(got.rows).toEqual([{ cents: -10798, source: "apple_pay" }, { cents: -2160, source: "csv" }]);
+    const left = await old.query<{ raw: string }>(`select raw from public.ingest_failures`);
+    expect(left.rows.map((r) => r.raw)).toEqual([body("$40.00", "JB HI-FI", "Afterpay Card")]);
     await old.close();
   });
 });
