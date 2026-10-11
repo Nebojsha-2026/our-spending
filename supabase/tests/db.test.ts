@@ -276,13 +276,32 @@ describe("phone ingest", () => {
 
   it("skips a card that isn't saved, and matches Wallet names to nicknames", async () => {
     const before = (await rows<{ n: number }>(`select count(*)::int as n from public.transactions`))[0].n;
-    for (const card of ["Afterpay Card", "Visa", "ANZ"]) {
+    for (const card of ["Afterpay Card", "Coles Gift Card", "Zip"]) {
       expect(await asAnon(() => ingest({ card, cents: -4000, at: "2026-10-07T19:30:00+11:00" }))).toEqual({ skipped: "unknown_card", card });
     }
     expect((await rows<{ n: number }>(`select count(*)::int as n from public.transactions`))[0].n).toBe(before);
     // Wallet's name can be longer than the nickname, and the case can differ.
     const r = await asAnon(() => ingest({ card: "anz visa debit", cents: -4100, at: "2026-10-07T19:31:00+11:00" }));
     expect(r).toMatchObject({ duplicate: false });
+  });
+
+  it("puts Wallet's plain names ('Debit', 'ANZ Debit') on the spender's own card", async () => {
+    await as(A, "a@example.com", () =>
+      rows(`insert into public.accounts (household_id, member_id, bank, nickname, last4, type)
+            select household_id, id, 'NAB', 'Everyday', '4321', 'credit' from public.members where user_id = auth.uid()`),
+    );
+    const cardOf = async (card: string, minute: number) => {
+      const r = await asAnon(() => ingest({ card, cents: -(4200 + minute), at: `2026-10-07T19:${40 + minute}:00+11:00` }));
+      const [t] = await rows<{ nickname: string }>(
+        `select a.nickname from public.transactions t join public.accounts a on a.id = t.account_id where t.id = $1`,
+        [(r as { id: string }).id],
+      );
+      return t.nickname;
+    };
+    expect(await cardOf("Debit", 0)).toBe("ANZ Visa"); // the default
+    expect(await cardOf("NAB Credit", 1)).toBe("Everyday"); // same bank and type
+    expect(await cardOf("Visa", 2)).toBe("ANZ Visa");
+    await as(A, "a@example.com", () => rows(`delete from public.accounts where nickname = 'Everyday'`));
   });
 
   it("rejects bad tokens, revoked tokens and bad input", async () => {
@@ -295,8 +314,8 @@ describe("phone ingest", () => {
   });
 
   it("rate-limits a token to 20 captures per 10 minutes", async () => {
-    // 4 captured so far; fill up to 20.
-    for (let i = 0; i < 16; i++) {
+    // 7 captured so far; fill up to 20.
+    for (let i = 0; i < 13; i++) {
       await asAnon(() => ingest({ cents: -(100 + i), at: `2026-10-07T21:${String(i).padStart(2, "0")}:00+11:00` }));
     }
     await expect(asAnon(() => ingest({ cents: -999, at: "2026-10-07T22:00:00+11:00" }))).rejects.toThrow(/Too many/);
@@ -1233,5 +1252,42 @@ describe("weekly Capture log summary", () => {
     await failure("Ignored: a transfer", 2);
     expect(await claim()).toEqual(none);
     expect(await rows(`select * from private.capture_summaries`)).toHaveLength(0);
+  });
+});
+
+describe("migration: Wallet's plain card names", () => {
+  it("logs iPhone payments skipped for a plain Wallet name, and keeps the rest in the Capture log", async () => {
+    const files = readdirSync(MIGRATIONS).filter((f) => f.endsWith(".sql")).sort();
+    const at = files.findIndex((f) => f.includes("wallet_card_names"));
+    const old = new PGlite();
+    await old.exec(SUPABASE_STUB);
+    for (const f of files.slice(0, at)) await old.exec(readFileSync(join(MIGRATIONS, f), "utf8"));
+    const hash = "9".repeat(64);
+    const body = (amount: string, merchant: string, card: string) => JSON.stringify({ amount, merchant, card, source: "apple_pay" });
+    await old.exec(`
+      insert into auth.users values ('${A}', 'a@example.com');
+      set role authenticated;
+      select set_config('request.jwt.claim.sub', '${A}', false);
+      select set_config('request.jwt.claims', '{"sub":"${A}","email":"a@example.com"}', false);
+      select public.create_household('Home', 'Alex');
+      insert into public.device_tokens (member_id, label, token_hash) select id, 'iPhone', '${hash}' from public.members;
+      insert into public.accounts (household_id, member_id, bank, nickname, last4, type, is_default)
+      select household_id, id, 'ANZ', 'ANZ Visa', '2030', 'debit', true from public.members;
+      reset role;
+    `);
+    const skip = (raw: string) =>
+      old.query(`select public.log_ingest_failure($1, 'apple_pay', $2, 'Not one of your cards: "x"')`, [hash, raw]);
+    await skip(body("$33.96", "IKEA", "Debit"));
+    await skip(body("$40.00", "JB HI-FI", "Afterpay Card"));
+    await skip("{not json");
+    await old.exec(readFileSync(join(MIGRATIONS, files[at]), "utf8"));
+
+    const got = await old.query(
+      `select t.amount_cents::int as cents, t.merchant_raw, a.nickname from public.transactions t join public.accounts a on a.id = t.account_id`,
+    );
+    expect(got.rows).toEqual([{ cents: -3396, merchant_raw: "IKEA", nickname: "ANZ Visa" }]);
+    const left = await old.query<{ raw: string }>(`select raw from public.ingest_failures order by raw`);
+    expect(left.rows.map((r) => r.raw)).toEqual(["{not json", body("$40.00", "JB HI-FI", "Afterpay Card")].sort());
+    await old.close();
   });
 });
